@@ -33,4 +33,4 @@
 
 # Vs code stuff
 
-*.vcproj*
+*.vcxproj*
