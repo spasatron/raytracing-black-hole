@@ -44,7 +44,7 @@ public:
 		return e[0] * e[0] + e[1] * e[1] + e[2] * e[2];
 	}
 	inline void make_unit_vector();
-
+	inline vec3& unit_vec();
 	float e[3] = { 0.0f , 0.0f, 0.0f };
 };
 
@@ -153,6 +153,13 @@ public:
 		e[2] *= k;
 	}
 
+	inline vec3& vec3::unit_vec() {
+		float k = 1.0f / sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]);
+		e[0] *= k;
+		e[1] *= k;
+		e[2] *= k;
+		return *this;
+	}
 
 	float get_uniform_rand() {
 		return (float(rand()) / (float(RAND_MAX) + 1.0f));
