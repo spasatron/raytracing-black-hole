@@ -46,7 +46,7 @@ bool sphere::hit(const ray& r, float t_min, float t_max, hit_record& rec) const 
 }
 
 bool sphere::hit(const vec3& p1, const vec3& p2, float t_max, hit_record& rec) const {
-	float t_min = 1e-3;
+	float t_min = 1e-6;
 	vec3 oc = p1 - center;
 	float tol = 1e-6;
 	float a = dot(p2 - p1, p2 - p1);

@@ -5,6 +5,7 @@
 #include <thread>
 #include <atomic>
 #include <math.h>
+#include <iomanip>
 #include "stb_image_write.h"
 #include "vec3.h"
 #include "ray.h"
@@ -52,16 +53,28 @@ vec3 color(const ray& r, hitable* world, int depth) {
 	hit_record rec;
 	ray r_c = r;
 	const int MAX_INT_STEPS = 10000;
-	float h = 10;
+	float h = .1;
 	float v = 1;
 	int cur_steps = 0;
-	while (cur_steps < MAX_INT_STEPS && r_c.origin().length() <= 100.0f) {
+	while (cur_steps < MAX_INT_STEPS && r_c.origin().length() <= 20.0f) {
 		cur_steps++;
+
+
+
+		
+
+
+
+
 		//Do step of the light ray
 		ray r_n = integration_step(r_c, h);
 		//check if there was an object that was hit
 		//TODO: Need a way to get the distance between these two vectors as the ray of reflection.
 		// These two rays are assumed to be so close to each other that they are basically linear.
+
+		if ((vec3(0.0f, 0.0f, 1.0f) - r_n.origin()).length() < .5)
+			return vec3(0.0f, 0.0f, 0.0f);
+
 
 		if (world->hit(r_c.origin(), r_n.origin(), FLT_MAX, rec)) {
 			ray scattered;
@@ -135,7 +148,11 @@ ray integration_step(const ray& r, float h = 1) {
 	double* ans;
 	ans = rk4vec(0, u, h, potential);
 
-	ray ret_ray(vec3(ans[0], ans[1], ans[2]), vec3(ans[3], ans[4], ans[5]));
+	vec3 vel(ans[3], ans[4], ans[5]);
+
+	vel.make_unit_vector();
+
+	ray ret_ray(vec3(ans[0], ans[1], ans[2]), vel);
 
 	delete[] ans;
 	delete[] u;
@@ -221,7 +238,7 @@ vec3 f(vec3 org) {
 	return vec3(0, 0, 0);
 }
 
-
+/*
 double* potential(double u[]) {
 	double* ans = new double[6];
 
@@ -236,6 +253,49 @@ double* potential(double u[]) {
 	ans[5] = 0;
 	return ans;
 }
+*/
+double* potential(double u[]) {
+
+	double* ans = new double[6];
+
+	// du/dt = v(t)
+	ans[0] = u[3];
+	ans[1] = u[4];
+	ans[2] = u[5];
+	const double GM = 0.25;
+	const double c = 1;
+	//dv/dt = f(u)
+	
+	double x, y, z, dx, dy, dz, r, theta, phi, dr, dtheta, dphi, d2rdt2;
+	//Setting up local variables
+	x = u[0] - 0;
+	z = u[1] - 0;
+	y = u[2] + 1;
+	dx = u[3];
+	dz = u[4];
+	dy = u[5];
+
+	r = pow(x * x + y * y + z * z, .5);
+	theta = atan(y / (x + 1e-9)); // Protection against x ~ 0
+	phi = acos(z / (r + 1e-9)); // Protection against r ~ 0
+	dr = (.5 * pow(x * x + y * y + z * z, -.5)) * (2 * x * dx + 2 * y * dy + 2 * z * dz);
+	dtheta = (x * dy - y * dx) / (x * x + y * y + 1e-9);
+	dphi = (z * dr - r * dz) / (r * r * pow(1 - (z * z) / (r * r), .5) + 1e-9);
+
+	d2rdt2 = -GM * ((1 - (2 * GM) / (r * c * c)) / (1 - (3 * GM) / (r * c * c))) * (r / (r * r * r) - 1) / (r * r);
+
+
+
+	ans[3] = d2rdt2 * cos(theta) * sin(phi) - 2 * dr * (sin(theta) * sin(phi) * dtheta - cos(theta) * cos(phi) * dphi) - 2 * r * sin(theta) * cos(phi) * dtheta * dphi;
+	ans[5] = d2rdt2 * sin(theta) * sin(phi) + 2 * dr * (cos(theta) * sin(phi) * dtheta + sin(theta) * cos(phi) * dphi) + 2 * r * cos(theta) * cos(phi) * dtheta * dphi;
+	ans[4] = d2rdt2 * cos(phi) - 2 * dr * dphi * sin(phi);
+
+	//std::cout << std::fixed << std::setprecision(3) << "Pos: " << x << " " << y << " " << z <<  " " << r << " " << phi << " " << theta << std::endl;
+
+
+	return ans;
+}
+
 
 
 
@@ -258,8 +318,8 @@ vec3 f(vec3 org, vec3 dir) {
 
 int main() {
 	
-	int numX = 600;
-	int numY = 300;
+	int numX = 400;
+	int numY = 200;
 	int numSamples = 50;
 	int channels = 3;
 	
@@ -376,7 +436,7 @@ int main() {
 	for (int i = 0; i < future_vector.size(); i++)
 		future_vector[i].get();
 
-	int result = stbi_write_png("runge_kutta_test.png", numX, numY, channels, data, stride);
+	int result = stbi_write_png("runge_kutta_black_hole.png", numX, numY, channels, data, stride);
 
 
 
